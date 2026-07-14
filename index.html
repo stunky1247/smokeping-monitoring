@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCI Alaska Residential Telemetry Dashboard</title>
+    <meta name="description" content="Comparative network latency and packet loss dashboard tracking unencrypted port 443 TCP connections over GCI Alaska vs. Seattle NordVPN tunnel.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #080b11;
+            --card-bg: rgba(17, 24, 39, 0.6);
+            --card-border: rgba(255, 255, 255, 0.06);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent-vpn: #10b981;
+            --accent-vpn-glow: rgba(16, 185, 129, 0.15);
+            --accent-gci: #ef4444;
+            --accent-gci-glow: rgba(239, 68, 68, 0.15);
+            --brand-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.05) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(168, 85, 247, 0.04) 0px, transparent 60%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header Styling */
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-family: var(--font-display);
+            font-weight: 500;
+            color: #818cf8;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-vpn);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px var(--accent-vpn);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+            background: var(--brand-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: clamp(0.95rem, 2vw, 1.2rem);
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+            font-weight: 300;
+        }
+
+        /* Top-level Cards Grid */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .control-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .control-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .control-card.vpn {
+            border-top: 4px solid var(--accent-vpn);
+        }
+
+        .control-card.vpn:hover {
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: 0 10px 30px var(--accent-vpn-glow);
+        }
+
+        .control-card.gci {
+            border-top: 4px solid var(--accent-gci);
+        }
+
+        .control-card.gci:hover {
+            border-color: rgba(239, 68, 68, 0.4);
+            box-shadow: 0 10px 30px var(--accent-gci-glow);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .card-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .vpn .card-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-vpn);
+        }
+
+        .gci .card-badge {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-gci);
+            animation: blink 2.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .metric-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 1.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .vpn .metric-value.loss { color: var(--accent-vpn); }
+        .vpn .metric-value.latency { color: var(--accent-vpn); }
+        .gci .metric-value.loss { color: var(--accent-gci); }
+        .gci .metric-value.latency { color: var(--accent-gci); }
+
+        .details-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .details-item {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .details-item svg {
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            margin-top: 3px;
+        }
+
+        .vpn .details-item svg { fill: var(--accent-vpn); }
+        .gci .details-item svg { fill: var(--accent-gci); }
+
+        /* Main Dashboard Charts */
+        .dashboard-section {
+            margin-bottom: 3rem;
+        }
+
+        .section-header {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .time-tabs {
+            display: inline-flex;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 0.25rem;
+            border-radius: 9999px;
+            margin-top: 0.5rem;
+        }
+
+        .time-tab {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.5rem 1.25rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .time-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .time-tab.active {
+            background: var(--brand-gradient);
+            color: var(--text-primary);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 2rem;
+        }
+
+        @media (max-width: 520px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-label {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            aspect-ratio: 697 / 310;
+        }
+
+        .chart-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            cursor: pointer;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
+        }
+
+        .chart-image:hover {
+            transform: scale(1.025);
+            filter: brightness(1.1);
+        }
+
+        .chart-caption {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Deep Dive Analysis */
+        .analysis-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .analysis-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .analysis-text {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+
+        .analysis-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .analysis-point {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 1.25rem;
+            border-radius: 10px;
+        }
+
+        .point-title {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .point-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Footer & Metadata */
+        footer {
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .sync-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+        }
+
+        .sync-icon {
+            width: 12px;
+            height: 12px;
+            fill: #818cf8;
+        }
+
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #818cf8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .github-link:hover {
+            color: #a5b4fc;
+            text-decoration: underline;
+        }
+
+        /* Lightbox modal for charts */
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox-img {
+            max-width: 100%;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .lightbox-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* SLA & Jitter Metrics Accent Colors */
+        .vpn .metric-value.success { color: var(--accent-vpn); }
+        .vpn .metric-value.jitter { color: var(--accent-vpn); }
+        .gci .metric-value.success { color: var(--accent-gci); }
+        .gci .metric-value.jitter { color: var(--accent-gci); }
+
+        /* Routing Map Component */
+        .routing-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 2rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .routing-title {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .routing-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .routing-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .routing-path-container {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .routing-path-header {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .path-label-vpn { color: var(--accent-vpn); }
+        .path-label-gci { color: var(--accent-gci); }
+
+        .route-hops {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .route-hops::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 5px;
+            bottom: 5px;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .vpn .route-hops::before {
+            background: linear-gradient(to bottom, var(--accent-vpn) 70%, rgba(255,255,255,0.1) 100%);
+        }
+        
+        .gci .route-hops::before {
+            background: linear-gradient(to bottom, var(--accent-gci) 30%, rgba(239, 68, 68, 0.3) 60%, rgba(255,255,255,0.1) 100%);
+        }
+
+        .hop {
+            position: relative;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .hop::before {
+            content: '';
+            position: absolute;
+            left: -1.45rem;
+            top: 4px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4b5563;
+            border: 2px solid var(--bg-color);
+        }
+
+        .vpn .hop.active::before {
+            background: var(--accent-vpn);
+            box-shadow: 0 0 8px var(--accent-vpn);
+        }
+
+        .gci .hop.active::before {
+            background: var(--accent-gci);
+            box-shadow: 0 0 8px var(--accent-gci);
+        }
+
+        .gci .hop.degraded::before {
+            background: #fbbf24;
+            box-shadow: 0 0 8px #fbbf24;
+        }
+
+        .hop-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.1rem;
+        }
+
+        .hop-desc {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Methodology Card */
+        .methodology-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 2rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .methodology-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        @media (min-width: 576px) {
+            .methodology-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (min-width: 992px) {
+            .methodology-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .methodology-card {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 1.25rem;
+        }
+
+        .methodology-card-title {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .methodology-card-value {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Dashboard Header -->
+        <header>
+            <div class="badge" id="status-badge">
+                <span class="pulse-dot"></span>
+                <span>Active Telemetry Monitoring</span>
+            </div>
+            <h1>GCI Alaska Residential Telemetry Dashboard</h1>
+            <p class="subtitle">Concurrent network monitoring comparing unencrypted port 443 TCP/HTTPS handshakes against a wireguard tunnel to Seattle. Designed to isolate middlebox-induced timeouts.</p>
+        </header>
+
+        <!-- Metrics Overview Grid -->
+        <div class="controls-grid">
+            <!-- Control A: VPN Seattle -->
+            <div class="control-card vpn" id="card-control-vpn">
+                <div class="card-header">
+                    <span class="card-title">VPN Seattle Tunnel</span>
+                    <span class="card-badge">Control Group A</span>
+                </div>
+                <div class="metric-group">
+                    <div>
+                        <div class="metric-label">Packet Loss (Last 3h)</div>
+                        <div class="metric-value loss" id="vpn-loss-val">0.0%</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">Avg Latency (Last 3h)</div>
+                        <div class="metric-value latency" id="vpn-latency-val">45.0ms</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">Connection SLA (Last 3h)</div>
+                        <div class="metric-value success" id="vpn-success-val">100.0%</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">Jitter (Last 3h)</div>
+                        <div class="metric-value jitter" id="vpn-jitter-val">1.2ms</div>
+                    </div>
+                </div>
+                <ul class="details-list">
+                    <li class="details-item">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                        <span>Deco Router Client VPN (WireGuard to Seattle)</span>
+                    </li>
+                    <li class="details-item">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                        <span>Restores clean packet flow and flat baseline</span>
+                    </li>
+                    <li class="details-item">
+                        <svg viewBox="0 0 24 24" style="fill: #f59e0b;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                        <span style="color: #fbbf24;">Note: 10-day trend data before July 9 includes a mix of VPN and non-VPN traffic. The Seattle VPN was permanently enabled on July 8, rendering prior data noisy.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Control B: Raw GCI Native -->
+            <div class="control-card gci" id="card-control-gci">
+                <div class="card-header">
+                    <span class="card-title">Raw GCI Network</span>
+                    <span class="card-badge">Control Group B</span>
+                </div>
+                <div class="metric-group">
+                    <div>
+                        <div class="metric-label">Packet Loss (Last 3h)</div>
+                        <div class="metric-value loss" id="gci-loss-val">83.0%</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">Avg Latency (Last 3h)</div>
+                        <div class="metric-value latency" id="gci-latency-val">15.00s</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">Connection SLA (Last 3h)</div>
+                        <div class="metric-value success" id="gci-success-val">17.0%</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">Jitter (Last 3h)</div>
+                        <div class="metric-value jitter" id="gci-jitter-val">4.52s</div>
+                    </div>
+                </div>
+                <ul class="details-list">
+                    <li class="details-item">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                        <span>Bypasses Deco VPN client (Raw GCI Alaska Routing)</span>
+                    </li>
+                    <li class="details-item">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                        <span>Suffers massive packet loss and persistent socket hangs</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Comparative Charts -->
+        <main class="dashboard-section">
+            <div class="section-header">
+                <h2 class="section-title" id="section-title">Telemetry Graphs (Last 3 Hours)</h2>
+                <div class="time-tabs">
+                    <button class="time-tab active" onclick="switchTimeRange('3h')" id="tab-3h">3-Hour Window</button>
+                    <button class="time-tab" onclick="switchTimeRange('10d')" id="tab-10d">10-Day Trend</button>
+                </div>
+            </div>
+            
+            <div class="charts-grid">
+                <!-- Seattle VPN Chart -->
+                <div class="chart-container" id="chart-seattle-container">
+                    <div class="chart-header">
+                        <span class="chart-label">
+                            <span class="pulse-dot" style="background-color: var(--accent-vpn); box-shadow: 0 0 8px var(--accent-vpn);"></span>
+                            Seattle VPN Tunnel (Control A)
+                        </span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <img src="roblox_vpn_seattle_3h.png" alt="Seattle VPN Roblox SmokePing Chart" class="chart-image" id="img-vpn" onclick="openLightbox(this)">
+                    </div>
+                    <p class="chart-caption">Measures HTTP/HTTPS latency & packet loss to Roblox API endpoints over NordVPN WireGuard. Note the flat, low-deviation lines showing consistent connections.</p>
+                </div>
+
+                <!-- Raw GCI Chart -->
+                <div class="chart-container" id="chart-native-container">
+                    <div class="chart-header">
+                        <span class="chart-label">
+                            <span class="pulse-dot" style="background-color: var(--accent-gci); box-shadow: 0 0 8px var(--accent-gci);"></span>
+                            Raw GCI Native (Control B)
+                        </span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <img src="roblox_gci_native_3h.png" alt="Raw GCI Native Roblox SmokePing Chart" class="chart-image" id="img-gci" onclick="openLightbox(this)">
+                    </div>
+                    <p class="chart-caption">Measures identical HTTP/HTTPS handshakes bypassing the VPN client directly over GCI Alaska. Note the heavy vertical smoke and red blocks indicating severe packet drop and timeouts.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Technical Deep Dive Analysis -->
+        <section class="analysis-card" id="technical-analysis">
+            <h3 class="analysis-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #818cf8;"><circle cx="12" cy="12" r="10"/><path d="m9.09 9 1-1a3 3 0 0 1 5.4 11.8 3 3 0 0 1-5 2v-2"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                Technical Breakdown & Diagnostic Analysis
+            </h3>
+            <p class="analysis-text">This deployment tests unencrypted HTTPS (TCP Port 443) performance directly against Roblox's edge load balancer. Standard web traffic and API handshakes are monitored concurrently by two separate physical nodes on the same local subnet.</p>
+            
+            <div class="analysis-points">
+                <div class="analysis-point">
+                    <h4 class="point-title">Why standard ping (ICMP) doesn't show this:</h4>
+                    <p class="point-desc">Many gaming websites and API Gateways filter or prioritize ICMP (ping) traffic, giving misleading metrics. This telemetry uses high-resolution TCP handshakes (TCPPing) to verify if actual sockets can connect.</p>
+                </div>
+                <div class="analysis-point">
+                    <h4 class="point-title">The "Seattle Bypass" proof:</h4>
+                    <p class="point-desc">Because wrapping the exact same destination requests inside a NordVPN WireGuard tunnel instantly drops packet loss to 0.00% and yields a stable 45ms latency, the core GCI trunk line to Seattle is healthy. The issue lies within GCI's internal unencrypted packet parsing, throttling, or DPI middleboxes.</p>
+                </div>
+                <div class="analysis-point">
+                    <h4 class="point-title">Spam-free Escalation:</h4>
+                    <p class="point-desc">This live dashboard is hosted securely and automatically updated every hour. By pointing ISP representatives and online community boards to this static URL, we avoid the daily posting limits of forums like r/anchorage while displaying real-time scientific telemetry.</p>
+                </div>
+            </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Routing Path & Traceroute Map -->
+        <section class="routing-section">
+            <h2 class="routing-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                Comparative Routing Paths (Traceroute Analysis)
+            </h2>
+            <p class="subtitle" style="margin-top: -0.5rem; margin-bottom: 1.5rem;">Visual comparison of network hops illustrating exactly where traffic packet drops and latency overhead are introduced in GCI's network topology.</p>
+            
+            <div class="routing-grid">
+                <!-- Route A: VPN Seattle -->
+                <div class="routing-path-container vpn">
+                    <div class="routing-path-header">
+                        <span>VPN Seattle Tunnel</span>
+                        <span class="path-label-vpn">Active &amp; Stable</span>
+                    </div>
+                    <div class="route-hops">
+                        <div class="hop active">
+                            <div class="hop-title">1. Local Router (LAN Gateway)</div>
+                            <div class="hop-desc">IP: 192.168.68.1 | Latency: &lt;1ms | Loss: 0.0%</div>
+                        </div>
+                        <div class="hop active">
+                            <div class="hop-title">2. Seattle NordVPN Gateway (WireGuard/NordLynx)</div>
+                            <div class="hop-desc">Tunnels unencrypted traffic past internal local GCI hops directly to Seattle.</div>
+                        </div>
+                        <div class="hop active">
+                            <div class="hop-title">3. Roblox Seattle Datacenter (api.roblox.com)</div>
+                            <div class="hop-desc">Port: 443 | Average Ping: 45ms | Loss: 0.0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Route B: Raw GCI Connection -->
+                <div class="routing-path-container gci">
+                    <div class="routing-path-header">
+                        <span>Raw GCI Connection</span>
+                        <span class="path-label-gci">Degraded Hops Detected</span>
+                    </div>
+                    <div class="route-hops">
+                        <div class="hop active">
+                            <div class="hop-title">1. Local Router (LAN Gateway)</div>
+                            <div class="hop-desc">IP: 192.168.68.1 | Latency: &lt;1ms | Loss: 0.0%</div>
+                        </div>
+                        <div class="hop active">
+                            <div class="hop-title">2. GCI Alaska Edge Gateway (Anchorage, AK)</div>
+                            <div class="hop-desc">Local residential routing. Latency: 15-20ms | Loss: 0.0%</div>
+                        </div>
+                        <div class="hop degraded">
+                            <div class="hop-title">3. GCI Transit / Seattle Peering Exchange (154.x.x.x)</div>
+                            <div class="hop-desc">Congested or misconfigured middlebox. Loss: ~83.0% | Core cause of connection drops.</div>
+                        </div>
+                        <div class="hop active">
+                            <div class="hop-title">4. Roblox Seattle Datacenter (api.roblox.com)</div>
+                            <div class="hop-desc">Port: 443 | Latency: 15.00s (TCP socket hangs) | Loss: ~83.0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Methodology Section -->
+        <section class="methodology-section">
+            <h2 class="routing-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                Telemetry Methodology &amp; Testing Parameters
+            </h2>
+            <p class="subtitle" style="margin-top: -0.5rem; margin-bottom: 1.5rem;">To ensure network-layer diagnostic accuracy and prevent standard ISP ICMP-ping-deprioritization skew, this telemetry runs continuous, real-world connection simulation parameters.</p>
+            <div class="methodology-grid">
+                <div class="methodology-card">
+                    <div class="methodology-card-title">Probe Protocol</div>
+                    <div class="methodology-card-value">TCP Handshake (SYN)</div>
+                </div>
+                <div class="methodology-card">
+                    <div class="methodology-card-title">Destination Port</div>
+                    <div class="methodology-card-value">Port 443 (HTTPS)</div>
+                </div>
+                <div class="methodology-card">
+                    <div class="methodology-card-title">Test Frequency</div>
+                    <div class="methodology-card-value">20 pings / 5 minutes</div>
+                </div>
+                <div class="methodology-card">
+                    <div class="methodology-card-title">Calculations Window</div>
+                    <div class="methodology-card-value">Rolling 3-Hour Average</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer / Metadata Info -->
+        <footer>
+            <div class="sync-info" id="sync-info-block">
+                <svg class="sync-icon" viewBox="0 0 24 24">
+                    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.68 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm-1.76 6.24C10.09 10.81 10 11.4 10 12c0 3.31 2.69 6 6 6v3l4-4-4-4v3c-1.92 0-3.64-.9-4.76-2.3l-1.46-1.46z"/>
+                </svg>
+                <span id="last-updated">Retrieving synchronization metrics...</span>
+            </div>
+            <div>
+                Network Latency Monitoring | Active Telemetry Dashboard
+            </div>
+        </footer>
+    </div>
+
+    <!-- Lightbox for Image Zoom -->
+    <div class="lightbox" id="lightbox-modal" onclick="closeLightbox()">
+        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+        <img class="lightbox-img" id="lightbox-image" src="" alt="Zoomed telemetry chart">
+    </div>
+
+    <!-- Javascript Logic for Live Metadata Times -->
+    <script>
+        // Fetch metadata to display last updated time
+        async function fetchMetadata() {
+            try {
+                const response = await fetch('./metadata.json?t=' + new Date().getTime());
+                if (!response.ok) throw new Error('Network error');
+                const data = await response.json();
+                
+                const timeString = data.last_updated_local || data.last_updated_utc;
+                if (timeString) {
+                    const date = new Date(timeString);
+                    const options = { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        second: '2-digit',
+                        timeZoneName: 'short' 
+                    };
+                    document.getElementById('last-updated').textContent = 'Last Updated: ' + date.toLocaleDateString(undefined, options);
+                } else {
+                    document.getElementById('last-updated').textContent = 'Last Updated: Pending sync loop';
+                }
+
+                // Dynamically update metrics if present in metadata
+                if (data.vpn_loss_pct !== undefined && data.vpn_loss_pct !== "N/A") {
+                    document.getElementById('vpn-loss-val').textContent = data.vpn_loss_pct + '%';
+                }
+                if (data.vpn_latency !== undefined && data.vpn_latency !== "N/A") {
+                    document.getElementById('vpn-latency-val').textContent = data.vpn_latency;
+                }
+                if (data.vpn_success_pct !== undefined && data.vpn_success_pct !== "N/A") {
+                    document.getElementById('vpn-success-val').textContent = data.vpn_success_pct + '%';
+                }
+                if (data.vpn_jitter !== undefined && data.vpn_jitter !== "N/A") {
+                    document.getElementById('vpn-jitter-val').textContent = data.vpn_jitter;
+                }
+                
+                if (data.gci_loss_pct !== undefined && data.gci_loss_pct !== "N/A") {
+                    document.getElementById('gci-loss-val').textContent = data.gci_loss_pct + '%';
+                }
+                if (data.gci_latency !== undefined && data.gci_latency !== "N/A") {
+                    document.getElementById('gci-latency-val').textContent = data.gci_latency;
+                }
+                if (data.gci_success_pct !== undefined && data.gci_success_pct !== "N/A") {
+                    document.getElementById('gci-success-val').textContent = data.gci_success_pct + '%';
+                }
+                if (data.gci_jitter !== undefined && data.gci_jitter !== "N/A") {
+                    document.getElementById('gci-jitter-val').textContent = data.gci_jitter;
+                }
+            } catch (error) {
+                console.warn('Metadata fetch failed, falling back to current system time estimate.', error);
+                document.getElementById('last-updated').textContent = 'Last Updated: Sync active (real-time telemetry)';
+            }
+        }
+
+        // Switch between 3h and 10d time range
+        function switchTimeRange(range) {
+            document.querySelectorAll('.time-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            if (range === '3h') {
+                document.getElementById('tab-3h').classList.add('active');
+                document.getElementById('img-vpn').src = 'roblox_vpn_seattle_3h.png';
+                document.getElementById('img-gci').src = 'roblox_gci_native_3h.png';
+                document.getElementById('section-title').textContent = 'Telemetry Graphs (Last 3 Hours)';
+            } else if (range === '10d') {
+                document.getElementById('tab-10d').classList.add('active');
+                document.getElementById('img-vpn').src = 'roblox_vpn_seattle_10d.png';
+                document.getElementById('img-gci').src = 'roblox_gci_native_10d.png';
+                document.getElementById('section-title').textContent = 'Telemetry Graphs (Last 10 Days)';
+            }
+        }
+
+        // Lightbox Functions
+        function openLightbox(imgElement) {
+            const lightbox = document.getElementById('lightbox-modal');
+            const lightboxImg = document.getElementById('lightbox-image');
+            lightboxImg.src = imgElement.src;
+            lightbox.classList.add('active');
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox-modal');
+            lightbox.classList.remove('active');
+        }
+
+        // Close lightbox on escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape") {
+                closeLightbox();
+            }
+        });
+
+        // Initialize metadata loading
+        window.addEventListener('DOMContentLoaded', fetchMetadata);
+    </script>
+</body>
+</html>

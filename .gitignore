@@ -1,0 +1,12 @@
+# Ignore all RRD data files and generated web images
+smokeping/data/**/*.rrd
+smokeping/data/**/*.png
+
+# Ignore lock or state files if they generate
+smokeping/data/.smokeping/
+
+# ADD THIS LINE: Ignore temporary web sorter cache files
+smokeping/data/__sortercache/
+
+# Keep the data folder structure in Git, but empty
+!smokeping/data/.gitkeep

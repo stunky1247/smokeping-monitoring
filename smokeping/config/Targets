@@ -1,0 +1,281 @@
+*** Targets ***
+
+# Global Defaults
+probe = FPing
+menu = Top
+title = Network Latency Grapher
+remark = Welcome to the SmokePing network monitor.
+
+# --- ROBLOX SERVICES SECTION ---
++ Roblox
+menu = Roblox Services
+title = Roblox Infrastructure (Last 3 Hours)
+probe = Curl
+urlformat = https://%host%/
+remark = This section monitors the baseline health, API availability, and content delivery performance of the core Roblox network infrastructure.
+
+
+++ Web_Portal
+menu = Main Portal
+title = Roblox Main Website (www)
+host = www.roblox.com
+remark = Measures the network response time to Roblox's primary front-end website to confirm if users can browse the homepage and load their dashboards.
+
+++ Core_API
+menu = Roblox API
+title = Roblox API Engine (Microservices)
+host = clientsettings.roblox.com
+remark = Monitors backend authentication and configuration microservices to determine if the core database engine is up and allowing players to log in.
+
+++ CDN_Static_Assets
+menu = CDN Static
+title = Roblox Content Delivery (rbxcdn Static)
+host = static.rbxcdn.com
+remark = Tracks the latency of basic image, icon, and user-interface asset delivery servers to ensure website elements load correctly.
+
+++ CDN_Game_Assets
+menu = CDN Game Files
+title = Roblox Experience Asset Engine
+host = assetdelivery.roblox.com
+remark = Evaluates the download performance of heavy game data like meshes, clothing, and map textures to verify that experiences load completely.
+
+# --- INTERNET SITES (Inherits FPing) ---
++ InternetSites
+menu = Internet Sites
+title = Internet Sites
+
+++ Facebook
+menu = Facebook
+title = Facebook
+host = facebook.com
+
+++ Youtube
+menu = YouTube
+title = YouTube
+host = youtube.com
+
+++ JupiterBroadcasting
+menu = JupiterBroadcasting
+title = JupiterBroadcasting
+host = jupiterbroadcasting.com
+
+++ GoogleSearch
+menu = Google
+title = google.com
+host = google.com
+
+# ++ GoogleSearchIpv6
+# menu = Google
+# probe = FPing6
+# title = ipv6.google.com
+# host = ipv6.google.com
+
+++ linuxserverio
+menu = linuxserver.io
+title = linuxserver.io
+host = linuxserver.io
+
+# --- EUROPE SECTION (Inherits FPing) ---
++ Europe
+menu = Europe
+title = European Connectivity
+
+++ Germany
+menu = Germany
+title = The Fatherland
+
++++ TelefonicaDE
+menu = Telefonica DE
+title = Telefonica DE
+host = www.telefonica.de
+
+++ Switzerland
+menu = Switzerland
+title = Switzerland
+
++++ CernIXP
+menu = CernIXP
+title = Cern Internet eXchange Point
+host = cixp.web.cern.ch
+
++++ SBB
+menu = SBB
+title = SBB
+host = www.sbb.ch
+
+++ UK
+menu = United Kingdom
+title = United Kingdom
+
++++ CambridgeUni
+menu = Cambridge
+title = Cambridge
+host = cam.ac.uk
+
++++ UEA
+menu = UEA
+title = UEA
+host = uea.ac.uk
+
+# --- USA SECTION (Inherits FPing) ---
++ USA
+menu = North America
+title = North American Connectivity
+
+++ MIT
+menu = MIT
+title = Massachusetts Institute of Technology Webserver
+host = web.mit.edu
+
+++ UCB
+menu = U. C. Berkeley
+title = U. C. Berkeley Webserver
+host = www.berkeley.edu
+
+++ UCSD
+menu = U. C. San Diego
+title = U. C. San Diego Webserver
+host = ucsd.edu
+
+++ UMN
+menu = University of Minnesota
+title = University of Minnesota
+host = twin-cities.umn.edu
+
+++ OSUOSL
+menu = Oregon State University Open Source Lab
+title = Oregon State University Open Source Lab
+host = osuosl.org
+
+# --- STANDARD DNS SECTION (Inherits FPing) ---
++ DNS
+menu = DNS
+title = DNS
+
+++ GoogleDNS1
+menu = Google DNS 1
+title = Google DNS 8.8.8.8
+host = 8.8.8.8
+
+++ GoogleDNS2
+menu = Google DNS 2
+title = Google DNS 8.8.4.4
+host = 8.8.4.4
+
+++ OpenDNS1
+menu = OpenDNS1
+title = OpenDNS1
+host = 208.67.222.222
+
+++ OpenDNS2
+menu = OpenDNS2
+title = OpenDNS2
+host = 208.67.220.220
+
+++ CloudflareDNS1
+menu = Cloudflare DNS 1
+title = Cloudflare DNS 1.1.1.1
+host = 1.1.1.1
+
+++ CloudflareDNS2
+menu = Cloudflare DNS 2
+title = Cloudflare DNS 1.0.0.1
+host = 1.0.0.1
+
+++ L3-1
+menu = Level3 DNS 1
+title = Level3 DNS 4.2.2.1
+host = 4.2.2.1
+
+++ L3-2
+menu = Level3 DNS 2
+title = Level3 DNS 4.2.2.2
+host = 4.2.2.2
+
+++ Quad9
+menu = Quad9
+title = Quad9 DNS 9.9.9.9
+host = 9.9.9.9
+
+# --- CUSTOM DNS PROBES SECTION ---
++ DNSProbes
+menu = DNS Probes
+title = DNS Probes
+probe = DNS
+
+++ GoogleDNS1_Dig
+menu = Google DNS 1
+title = Google DNS 8.8.8.8
+host = 8.8.8.8
+
+++ GoogleDNS2_Dig
+menu = Google DNS 2
+title = Google DNS 8.8.4.4
+host = 8.8.4.4
+
+++ OpenDNS1_Dig
+menu = OpenDNS1
+title = OpenDNS1
+host = 208.67.222.222
+
+++ OpenDNS2_Dig
+menu = OpenDNS2
+title = OpenDNS2
+host = 208.67.220.220
+
+++ CloudflareDNS1_Dig
+menu = Cloudflare DNS 1
+title = Cloudflare DNS 1.1.1.1
+host = 1.1.1.1
+
+++ CloudflareDNS2_Dig
+menu = Cloudflare DNS 2
+title = Cloudflare DNS 1.0.0.1
+host = 1.0.0.1
+
+++ L3-1_Dig
+menu = Level3 DNS 1
+title = Level3 DNS 4.2.2.1
+host = 4.2.2.1
+
+++ L3-2_Dig
+menu = Level3 DNS 2
+title = Level3 DNS 4.2.2.2
+host = 4.2.2.2
+
+++ Quad9_Dig
+menu = Quad9
+title = Quad9 DNS 9.9.9.9
+host = 9.9.9.9
+
+# --- ROBLOX TCP LOSS SECTION ---
++ Roblox_TCP
+menu = Roblox Packet Loss (TCP)
+title = Roblox Packet Loss & Jitter (TCPPing 443)
+probe = TCPPing
+port = 443
+remark = This section measures packet loss and jitter to Roblox infrastructure using TCP connection attempts on port 443 (HTTPS).
+
+++ Web_Portal_TCP
+menu = Main Portal (TCP)
+title = Roblox Main Website (www) - TCP 443
+host = www.roblox.com
+remark = Tracks connection reliability and TCP packet loss to the main front-end website.
+
+++ Core_API_TCP
+menu = Roblox API (TCP)
+title = Roblox API Engine - TCP 443
+host = clientsettings.roblox.com
+remark = Tracks connection reliability and TCP packet loss to core authentication and configuration microservices.
+
+++ CDN_Static_Assets_TCP
+menu = CDN Static (TCP)
+title = Roblox Content Delivery - TCP 443
+host = static.rbxcdn.com
+remark = Tracks connection reliability and TCP packet loss to CDN servers hosting static website assets.
+
+++ CDN_Game_Assets_TCP
+menu = CDN Game Files (TCP)
+title = Roblox Experience Asset Engine - TCP 443
+host = assetdelivery.roblox.com
+remark = Tracks connection reliability and TCP packet loss to CDN servers hosting active experience assets.

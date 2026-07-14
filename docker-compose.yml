@@ -1,0 +1,16 @@
+---
+services:
+  smokeping:
+    image: linuxserver/smokeping:latest
+    container_name: smokeping
+    hostname: smokeping
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/AKDT
+    volumes:
+      - ./smokeping/config:/config
+      - ./smokeping/data:/data
+    ports:
+      - 80:80
+    restart: "no"
