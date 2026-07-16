@@ -1,10 +1,10 @@
 {
-  "last_updated_utc": "2026-07-16T14:47:34Z",
-  "last_updated_local": "2026-07-16T06:47:34-0800",
+  "last_updated_utc": "2026-07-16T15:47:34Z",
+  "last_updated_local": "2026-07-16T07:47:34-0800",
   "local_sync_ok": true,
   "remote_sync_ok": true,
   "vpn_loss_pct": "0.3",
-  "vpn_latency": "48.4ms",
+  "vpn_latency": "48.5ms",
   "vpn_success_pct": "99.7",
   "vpn_jitter": "11.8ms",
   "gci_loss_pct": "N/A",
