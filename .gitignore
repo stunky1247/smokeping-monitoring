@@ -10,3 +10,7 @@ smokeping/data/__sortercache/
 
 # Keep the data folder structure in Git, but empty
 !smokeping/data/.gitkeep
+
+# Ignore temporary root-level files
+/*.log
+/*.rrd
