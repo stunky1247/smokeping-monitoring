@@ -19,34 +19,36 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # --- CONFIGURATION SETTINGS ---
 
-# Local SmokePing (Machine A - Seattle VPN)
-LOCAL_TARGET="Roblox_TCP.Core_API_TCP"
-LOCAL_CHART_3H="Core_API_TCP_last_10800.png"
-LOCAL_CHART_10D="Core_API_TCP_last_864000.png"
-LOCAL_OUTPUT_3H="roblox_vpn_seattle_3h.png"
-LOCAL_OUTPUT_10D="roblox_vpn_seattle_10d.png"
-LOCAL_SMOKEPING_URL="http://localhost/smokeping"
+# VPN SmokePing (Machine A - Seattle VPN Control)
+VPN_TARGET="Roblox_TCP.Core_API_TCP"
+VPN_CHART_3H="Core_API_TCP_last_10800.png"
+VPN_CHART_10D="Core_API_TCP_last_864000.png"
+VPN_OUTPUT_3H="roblox_vpn_seattle_3h.png"
+VPN_OUTPUT_10D="roblox_vpn_seattle_10d.png"
+VPN_SMOKEPING_HOST="localhost"
+VPN_SMOKEPING_URL="http://${VPN_SMOKEPING_HOST}/smokeping"
 
-# Remote Laptop (Machine B - Raw GCI Native)
+# Remote SmokePing (Machine B - Raw GCI Native)
 # Choose pull method: "ssh" (SCP over network) or "http" (Fetch via local webserver)
-LAPTOP_PULL_METHOD="http"
+REMOTE_PULL_METHOD="http"
+REMOTE_IP="192.168.68.72"
 
-# Laptop SSH Settings (For pull method: "ssh")
-LAPTOP_SSH_HOST="192.168.68.72"
-LAPTOP_SSH_USER="YOURUSERNAMEHERE"
-LAPTOP_SSH_KEY="" # Optional path (e.g., ~/.ssh/id_rsa), leave blank for default agent
-LAPTOP_SSH_PATH_3H="/home/YOURUSERNAMEHERE/projects/smokeping-monitoring/roblox_gci_native_3h.png"
-LAPTOP_SSH_PATH_10D="/home/YOURUSERNAMEHERE/projects/smokeping-monitoring/roblox_gci_native_10d.png"
-LAPTOP_SSH_RRD_PATH="/home/YOURUSERNAMEHERE/projects/smokeping-monitoring/smokeping/data/Roblox_TCP/Core_API_TCP.rrd"
+# Remote SSH Settings (For pull method: "ssh")
+REMOTE_SSH_HOST="${REMOTE_IP}"
+REMOTE_SSH_USER="${USER:-$(whoami)}"
+REMOTE_SSH_KEY="" # Optional path (e.g., ~/.ssh/id_rsa), leave blank for default agent
+REMOTE_SSH_PATH_3H="/home/${REMOTE_SSH_USER}/projects/smokeping-monitoring/roblox_gci_native_3h.png"
+REMOTE_SSH_PATH_10D="/home/${REMOTE_SSH_USER}/projects/smokeping-monitoring/roblox_gci_native_10d.png"
+REMOTE_SSH_RRD_PATH="/home/${REMOTE_SSH_USER}/projects/smokeping-monitoring/smokeping/data/Roblox_TCP/Core_API_TCP.rrd"
 
-# Laptop HTTP Settings (For pull method: "http")
-LAPTOP_HTTP_CGI="http://192.168.68.72/smokeping/smokeping.cgi"
-LAPTOP_HTTP_IMAGE_3H="http://192.168.68.72/smokeping/cache/Roblox_TCP/Core_API_TCP_last_10800.png"
-LAPTOP_HTTP_IMAGE_10D="http://192.168.68.72/smokeping/cache/Roblox_TCP/Core_API_TCP_last_864000.png"
-LAPTOP_HTTP_RRD="http://192.168.68.72/smokeping/Core_API_TCP.rrd"
+# Remote HTTP Settings (For pull method: "http")
+REMOTE_HTTP_CGI="http://${REMOTE_IP}/smokeping/smokeping.cgi"
+REMOTE_HTTP_IMAGE_3H="http://${REMOTE_IP}/smokeping/cache/Roblox_TCP/Core_API_TCP_last_10800.png"
+REMOTE_HTTP_IMAGE_10D="http://${REMOTE_IP}/smokeping/cache/Roblox_TCP/Core_API_TCP_last_864000.png"
+REMOTE_HTTP_RRD="http://${REMOTE_IP}/smokeping/Core_API_TCP.rrd"
 
 # General Config
-REPO_DIR="/home/YOURUSERNAMEHERE/projects/smokeping-monitoring"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INTERVAL_SECONDS=3600
 
 # ------------------------------------------------------------------------------
@@ -79,49 +81,53 @@ sync_telemetry() {
         sleep 5
     fi
 
-    # 1. FORCE LOCAL REGENERATION & DOWNLOAD CHART
-    echo "[Local Node] Requesting local SmokePing CGI to force graph regeneration..."
-    curl -s -o /dev/null "${LOCAL_SMOKEPING_URL}/smokeping.cgi?target=${LOCAL_TARGET}"
+    # 1. FORCE VPN REGENERATION & DOWNLOAD CHART
+    echo "[VPN Node] Requesting VPN SmokePing CGI to force graph regeneration..."
+    curl -s -o /dev/null "${VPN_SMOKEPING_URL}/smokeping.cgi?target=${VPN_TARGET}"
 
     # Wait briefly for RRDtool to write the chart image
     sleep 2
 
-    echo "[Local Node] Downloading local chart images..."
-    curl -s -f -o "${REPO_DIR}/${LOCAL_OUTPUT_3H}" "${LOCAL_SMOKEPING_URL}/cache/Roblox_TCP/${LOCAL_CHART_3H}"
-    curl -s -f -o "${REPO_DIR}/${LOCAL_OUTPUT_10D}" "${LOCAL_SMOKEPING_URL}/cache/Roblox_TCP/${LOCAL_CHART_10D}"
+    echo "[VPN Node] Downloading VPN chart images..."
+    curl -s -f -o "${REPO_DIR}/${VPN_OUTPUT_3H}" "${VPN_SMOKEPING_URL}/cache/Roblox_TCP/${VPN_CHART_3H}"
+    curl -s -f -o "${REPO_DIR}/${VPN_OUTPUT_10D}" "${VPN_SMOKEPING_URL}/cache/Roblox_TCP/${VPN_CHART_10D}"
 
-    if [ -s "${REPO_DIR}/${LOCAL_OUTPUT_3H}" ] && [ -s "${REPO_DIR}/${LOCAL_OUTPUT_10D}" ]; then
-        echo "[Local Node] Successfully synchronized local charts (3h and 10d)."
+    if [ -s "${REPO_DIR}/${VPN_OUTPUT_3H}" ] && [ -s "${REPO_DIR}/${VPN_OUTPUT_10D}" ]; then
+        echo "[VPN Node] Successfully synchronized VPN charts (3h and 10d)."
     else
-        echo "[Local Node] Error: Failed to retrieve local charts from cache."
+        echo "[VPN Node] Error: Failed to retrieve VPN charts from cache."
         local_success=false
         sync_success=false
     fi
 
-    # 2. PULL REMOTE LAPTOP CHARTS AND DATABASE (RAW GCI NATIVE)
-    echo "[Remote Node] Retrieving remote charts using method: ${LAPTOP_PULL_METHOD}"
+    # 2. PULL REMOTE CHARTS AND DATABASE (RAW GCI NATIVE)
+    echo "[Remote Node] Retrieving remote charts using method: ${REMOTE_PULL_METHOD}"
 
-    if [ "${LAPTOP_PULL_METHOD}" = "ssh" ]; then
+    if [ "${REMOTE_PULL_METHOD}" = "ssh" ]; then
         local SCP_CMD="scp -B"
-        if [ -n "${LAPTOP_SSH_KEY}" ]; then
-            SCP_CMD="scp -B -i ${LAPTOP_SSH_KEY}"
+        if [ -n "${REMOTE_SSH_KEY}" ]; then
+            SCP_CMD="scp -B -i ${REMOTE_SSH_KEY}"
         fi
 
-        $SCP_CMD "${LAPTOP_SSH_USER}@${LAPTOP_SSH_HOST}:${LAPTOP_SSH_PATH_3H}" "${REPO_DIR}/roblox_gci_native_3h.png" 2>/dev/null
-        $SCP_CMD "${LAPTOP_SSH_USER}@${LAPTOP_SSH_HOST}:${LAPTOP_SSH_PATH_10D}" "${REPO_DIR}/roblox_gci_native_10d.png" 2>/dev/null
-        $SCP_CMD "${LAPTOP_SSH_USER}@${LAPTOP_SSH_HOST}:${LAPTOP_SSH_RRD_PATH}" "${REPO_DIR}/smokeping/data/Roblox_TCP/Core_API_TCP_laptop.rrd" 2>/dev/null
+        $SCP_CMD "${REMOTE_SSH_USER}@${REMOTE_SSH_HOST}:${REMOTE_SSH_PATH_3H}" "${REPO_DIR}/roblox_gci_native_3h.png" 2>/dev/null
+        $SCP_CMD "${REMOTE_SSH_USER}@${REMOTE_SSH_HOST}:${REMOTE_SSH_PATH_10D}" "${REPO_DIR}/roblox_gci_native_10d.png" 2>/dev/null
+        $SCP_CMD "${REMOTE_SSH_USER}@${REMOTE_SSH_HOST}:${REMOTE_SSH_RRD_PATH}" "${REPO_DIR}/smokeping/data/Roblox_TCP/Core_API_TCP_laptop.rrd" 2>/dev/null
 
-    elif [ "${LAPTOP_PULL_METHOD}" = "http" ]; then
+    elif [ "${REMOTE_PULL_METHOD}" = "http" ]; then
         # Force remote regeneration by hitting CGI
-        curl -s -m 5 -o /dev/null "${LAPTOP_HTTP_CGI}?target=${LOCAL_TARGET}"
+        curl -s -m 5 -o /dev/null "${REMOTE_HTTP_CGI}?target=${VPN_TARGET}"
         sleep 2
         # Download charts and RRD database
-        curl -s -f -m 10 -o "${REPO_DIR}/roblox_gci_native_3h.png" "${LAPTOP_HTTP_IMAGE_3H}"
-        curl -s -f -m 10 -o "${REPO_DIR}/roblox_gci_native_10d.png" "${LAPTOP_HTTP_IMAGE_10D}"
-        curl -s -f -m 15 -o "${REPO_DIR}/smokeping/data/Roblox_TCP/Core_API_TCP_laptop.rrd" "${LAPTOP_HTTP_RRD}"
+        curl -s -f -m 10 -o "${REPO_DIR}/roblox_gci_native_3h.png" "${REMOTE_HTTP_IMAGE_3H}"
+        curl -s -f -m 10 -o "${REPO_DIR}/roblox_gci_native_10d.png" "${REMOTE_HTTP_IMAGE_10D}"
+        curl -s -f -m 15 -o "${REPO_DIR}/smokeping/data/Roblox_TCP/Core_API_TCP_laptop.rrd" "${REMOTE_HTTP_RRD}"
+
+        # Download GCI traceroute
+        echo "[Remote Node] Downloading GCI traceroute log..."
+        curl -s -f -m 10 -o "${REPO_DIR}/traceroute_gci.txt" "http://${REMOTE_IP}/smokeping/traceroute_gci.txt"
 
     else
-        echo "[Remote Node] Error: Invalid pull method configured: ${LAPTOP_PULL_METHOD}"
+        echo "[Remote Node] Error: Invalid pull method configured: ${REMOTE_PULL_METHOD}"
         remote_success=false
     fi
 
@@ -228,16 +234,55 @@ sync_telemetry() {
 EOF
     echo "[Metadata] Updated metadata.json with timestamp and parsed RRD statistics."
 
+    # 3.5 GENERATE VPN TRACEROUTE & ARCHIVE LOGS
+    echo "[Traceroute] Generating VPN node traceroute..."
+    local trace_dir="${REPO_DIR}/traceroute_logs"
+    mkdir -p "${trace_dir}"
+    
+    local vpn_trace_file="${REPO_DIR}/traceroute_vpn.txt"
+    local win_tracert=""
+    if [ -f "/mnt/c/Windows/System32/tracert.exe" ]; then
+        win_tracert="/mnt/c/Windows/System32/tracert.exe"
+    elif [ -f "/c/Windows/System32/tracert.exe" ]; then
+        win_tracert="/c/Windows/System32/tracert.exe"
+    elif command -v tracert.exe &>/dev/null; then
+        win_tracert="tracert.exe"
+    fi
+
+    if [ -n "${win_tracert}" ]; then
+        "${win_tracert}" -d -h 15 clientsettings.roblox.com > "${vpn_trace_file}" 2>/dev/null
+    else
+        if command -v traceroute &>/dev/null; then
+            traceroute -q 1 -w 2 -m 15 clientsettings.roblox.com > "${vpn_trace_file}" 2>/dev/null
+        else
+            echo "Traceroute tool not available on this host." > "${vpn_trace_file}"
+        fi
+    fi
+    
+    # Save historical copies if files exist and are not empty
+    local timestamp=$(date +%Y%m%d_%H%M)
+    if [ -s "${vpn_trace_file}" ]; then
+        cp "${vpn_trace_file}" "${trace_dir}/traceroute_vpn_${timestamp}.txt"
+    fi
+    if [ -s "${REPO_DIR}/traceroute_gci.txt" ]; then
+        cp "${REPO_DIR}/traceroute_gci.txt" "${trace_dir}/traceroute_gci_${timestamp}.txt"
+    fi
+
     # 4. GIT COMMIT AND PUSH
     echo "[Git] Checking for modified telemetry tracking assets..."
 
     # Only add files if they exist to avoid git fatal pathspec error on first run
     local files_to_add=""
-    for file in "${REPO_DIR}/${LOCAL_OUTPUT_3H}" "${REPO_DIR}/${LOCAL_OUTPUT_10D}" "${REPO_DIR}/roblox_gci_native_3h.png" "${REPO_DIR}/roblox_gci_native_10d.png" "${REPO_DIR}/metadata.json"; do
+    for file in "${REPO_DIR}/${VPN_OUTPUT_3H}" "${REPO_DIR}/${VPN_OUTPUT_10D}" "${REPO_DIR}/roblox_gci_native_3h.png" "${REPO_DIR}/roblox_gci_native_10d.png" "${REPO_DIR}/metadata.json" "${REPO_DIR}/traceroute_vpn.txt" "${REPO_DIR}/traceroute_gci.txt"; do
         if [ -f "$file" ]; then
             files_to_add="$files_to_add $file"
         fi
     done
+
+    # Add historical logs
+    if [ -d "${trace_dir}" ]; then
+        git add "${trace_dir}/*.txt" 2>/dev/null
+    fi
 
     git add $files_to_add
 

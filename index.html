@@ -657,6 +657,23 @@
             color: var(--text-secondary);
         }
 
+        /* Traceroute Terminal Box Styling */
+        .trace-pre {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            color: #34d399; /* emerald green terminal font */
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            overflow-x: auto;
+            white-space: pre;
+            max-height: 280px;
+            margin: 0;
+            backdrop-filter: blur(8px);
+        }
+
         /* Methodology Card */
         .methodology-section {
             background: var(--card-bg);
@@ -923,6 +940,24 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Live Traceroute Output Console -->
+            <div class="traceroute-console-section" style="margin-top: 2rem;">
+                <h3 style="font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                    Live Traceroute Logs (Active Peering Traces)
+                </h3>
+                <div class="routing-grid">
+                    <div>
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--accent-vpn); margin-bottom: 0.5rem;">Latest VPN Trace (Seattle Gateway)</div>
+                        <pre class="trace-pre" id="vpn-trace-log">Loading live VPN traceroute logs...</pre>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--accent-gci); margin-bottom: 0.5rem;">Latest Raw GCI Trace (Anchorage Gateways)</div>
+                        <pre class="trace-pre" id="gci-trace-log">Loading GCI traceroute logs...</pre>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- Methodology Section -->
@@ -1068,8 +1103,41 @@
             }
         });
 
-        // Initialize metadata loading
-        window.addEventListener('DOMContentLoaded', fetchMetadata);
+        async function fetchTracerouteLogs() {
+            // Fetch VPN traceroute log
+            try {
+                const response = await fetch('./traceroute_vpn.txt?t=' + new Date().getTime());
+                if (response.ok) {
+                    const text = await response.text();
+                    document.getElementById('vpn-trace-log').textContent = text;
+                } else {
+                    document.getElementById('vpn-trace-log').textContent = 'No active VPN traceroute log found.';
+                }
+            } catch (error) {
+                console.warn('Failed to fetch VPN trace log', error);
+                document.getElementById('vpn-trace-log').textContent = 'Error loading VPN trace log.';
+            }
+
+            // Fetch GCI traceroute log
+            try {
+                const response = await fetch('./traceroute_gci.txt?t=' + new Date().getTime());
+                if (response.ok) {
+                    const text = await response.text();
+                    document.getElementById('gci-trace-log').textContent = text;
+                } else {
+                    document.getElementById('gci-trace-log').textContent = 'No active GCI traceroute log found.';
+                }
+            } catch (error) {
+                console.warn('Failed to fetch GCI trace log', error);
+                document.getElementById('gci-trace-log').textContent = 'Error loading GCI trace log.';
+            }
+        }
+
+        // Initialize telemetry loading
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchMetadata();
+            fetchTracerouteLogs();
+        });
     </script>
 </body>
 </html>
