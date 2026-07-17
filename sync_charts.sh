@@ -124,7 +124,11 @@ sync_telemetry() {
 
         # Download GCI traceroute
         echo "[Remote Node] Downloading GCI traceroute log..."
-        curl -s -f -m 10 -o "${REPO_DIR}/traceroute_gci.txt" "http://${REMOTE_IP}/smokeping/traceroute_gci.txt"
+        if ! curl -s -f -m 10 -o "${REPO_DIR}/traceroute_gci.txt" "http://${REMOTE_IP}/smokeping/traceroute_gci.txt"; then
+            if [ ! -s "${REPO_DIR}/traceroute_gci.txt" ]; then
+                echo "No GCI traceroute data available yet (pending remote schedule)." > "${REPO_DIR}/traceroute_gci.txt"
+            fi
+        fi
 
     else
         echo "[Remote Node] Error: Invalid pull method configured: ${REMOTE_PULL_METHOD}"
@@ -264,7 +268,7 @@ EOF
     if [ -s "${vpn_trace_file}" ]; then
         cp "${vpn_trace_file}" "${trace_dir}/traceroute_vpn_${timestamp}.txt"
     fi
-    if [ -s "${REPO_DIR}/traceroute_gci.txt" ]; then
+    if [ -s "${REPO_DIR}/traceroute_gci.txt" ] && ! grep -q "pending remote schedule" "${REPO_DIR}/traceroute_gci.txt"; then
         cp "${REPO_DIR}/traceroute_gci.txt" "${trace_dir}/traceroute_gci_${timestamp}.txt"
     fi
 
