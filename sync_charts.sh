@@ -254,10 +254,10 @@ EOF
     fi
 
     if [ -n "${win_tracert}" ]; then
-        "${win_tracert}" -d -h 15 clientsettings.roblox.com > "${vpn_trace_file}" 2>/dev/null
+        "${win_tracert}" -d -h 15 edge-term4-sea1.roblox.com > "${vpn_trace_file}" 2>/dev/null
     else
         if command -v traceroute &>/dev/null; then
-            traceroute -q 1 -w 2 -m 15 clientsettings.roblox.com > "${vpn_trace_file}" 2>/dev/null
+            traceroute -q 1 -w 2 -m 15 edge-term4-sea1.roblox.com > "${vpn_trace_file}" 2>/dev/null
         else
             echo "Traceroute tool not available on this host." > "${vpn_trace_file}"
         fi

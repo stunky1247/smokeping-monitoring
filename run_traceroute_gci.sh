@@ -29,7 +29,7 @@ echo "Output path: ${TARGET_FILE}"
 while true; do
     echo "[$(date)] Executing traceroute trace..."
     mkdir -p "$(dirname "${TARGET_FILE}")"
-    "${WIN_TRACERT}" -d -h 15 clientsettings.roblox.com > "${TARGET_FILE}" 2>&1
+    "${WIN_TRACERT}" -d -h 15 edge-term4-sea1.roblox.com > "${TARGET_FILE}" 2>&1
     echo "[$(date)] Traceroute completed. Sleeping for 1 hour."
     sleep 3600
 done
