@@ -923,19 +923,19 @@
                     <div class="route-hops">
                         <div class="hop active">
                             <div class="hop-title">1. Local Router (LAN Gateway)</div>
-                            <div class="hop-desc">IP: 192.168.68.1 | Latency: &lt;1ms | Loss: 0.0%</div>
+                            <div class="hop-desc">192.168.68.1 | Latency: &lt;1ms | Home Gateway</div>
                         </div>
                         <div class="hop active">
-                            <div class="hop-title">2. GCI Alaska Edge Gateway (Anchorage, AK)</div>
-                            <div class="hop-desc">Hops 3-4 (10.128.41.41 / 10.128.17.246) | Latency: 14-18ms | Local GCI Anchorage network</div>
+                            <div class="hop-title">2. GCI Alaska Edge Network (Anchorage, AK)</div>
+                            <div class="hop-desc">Anchorage Core Network | Latency: ~14-18ms | Local Residential Hops</div>
                         </div>
                         <div class="hop degraded">
-                            <div class="hop-title">3. GCI Submarine Trunk &amp; Seattle Peering (10.128.4.x / 50.248.x.x)</div>
-                            <div class="hop-desc">Hops 6-9 | Latency steps from 18ms to 52ms crossing trunk line to Seattle | Intermittent packet drops</div>
+                            <div class="hop-title">3. GCI Submarine Fiber &amp; Seattle Peering Exchange</div>
+                            <div class="hop-desc">Gulf of Alaska Submarine Cable to Seattle | Latency steps from ~18ms to ~52ms | Active Peering Exchange</div>
                         </div>
                         <div class="hop active">
-                            <div class="hop-title">4. Roblox Seattle Datacenter (edge-term4-sea1.roblox.com)</div>
-                            <div class="hop-desc">Hop 13 (128.116.115.3) | Port: 443 | End-to-end TCP Connection</div>
+                            <div class="hop-title">4. Roblox Seattle Datacenter (api.roblox.com)</div>
+                            <div class="hop-desc">Port: 443 | End-to-end Destination Socket</div>
                         </div>
                     </div>
                 </div>
