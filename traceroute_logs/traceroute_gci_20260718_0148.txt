@@ -1,0 +1,5 @@
+
+Tracing route to edge-term4-sea1.roblox.com [128.116.115.3]
+over a maximum of 15 hops:
+
+  1    11 ms     7 ms     5 ms  192.168.68.1 
