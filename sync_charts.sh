@@ -244,19 +244,21 @@ EOF
     mkdir -p "${trace_dir}"
     
     local vpn_trace_file="${REPO_DIR}/traceroute_vpn.txt"
-    local win_tracert=""
-    if [ -f "/mnt/c/Windows/System32/tracert.exe" ]; then
-        win_tracert="/mnt/c/Windows/System32/tracert.exe"
-    elif [ -f "/c/Windows/System32/tracert.exe" ]; then
-        win_tracert="/c/Windows/System32/tracert.exe"
-    elif command -v tracert.exe &>/dev/null; then
-        win_tracert="tracert.exe"
-    fi
-
-    if [ -n "${win_tracert}" ]; then
-        "${win_tracert}" -d -h 15 edge-term4-sea1.roblox.com > "${vpn_trace_file}" 2>/dev/null
+    if command -v mtr &>/dev/null; then
+        mtr --report --report-cycles 10 --no-dns edge-term4-sea1.roblox.com > "${vpn_trace_file}" 2>/dev/null
     else
-        if command -v traceroute &>/dev/null; then
+        local win_tracert=""
+        if [ -f "/mnt/c/Windows/System32/tracert.exe" ]; then
+            win_tracert="/mnt/c/Windows/System32/tracert.exe"
+        elif [ -f "/c/Windows/System32/tracert.exe" ]; then
+            win_tracert="/c/Windows/System32/tracert.exe"
+        elif command -v tracert.exe &>/dev/null; then
+            win_tracert="tracert.exe"
+        fi
+
+        if [ -n "${win_tracert}" ]; then
+            "${win_tracert}" -d -h 15 edge-term4-sea1.roblox.com > "${vpn_trace_file}" 2>/dev/null
+        elif command -v traceroute &>/dev/null; then
             traceroute -q 1 -w 2 -m 15 edge-term4-sea1.roblox.com > "${vpn_trace_file}" 2>/dev/null
         else
             echo "Traceroute tool not available on this host." > "${vpn_trace_file}"
@@ -272,12 +274,47 @@ EOF
         cp "${REPO_DIR}/traceroute_gci.txt" "${trace_dir}/traceroute_gci_${timestamp}.txt"
     fi
 
+    # Extract 24-hour worst trace from traceroute_logs
+    local worst_vpn=""
+    local max_score=0
+    for log_file in $(find "${trace_dir}" -name "traceroute_vpn_*.txt" -mtime -1 2>/dev/null); do
+        local star_count=$(grep -c "\*" "$log_file" 2>/dev/null | tr -cd '0-9')
+        star_count=${star_count:-0}
+        local score=$((star_count * 100))
+        if [ $score -ge $max_score ]; then
+            max_score=$score
+            worst_vpn="$log_file"
+        fi
+    done
+    if [ -n "$worst_vpn" ] && [ -s "$worst_vpn" ]; then
+        cp "$worst_vpn" "${REPO_DIR}/traceroute_vpn_worst.txt"
+    else
+        cp "${vpn_trace_file}" "${REPO_DIR}/traceroute_vpn_worst.txt" 2>/dev/null
+    fi
+
+    local worst_gci=""
+    local max_gci_score=0
+    for log_file in $(find "${trace_dir}" -name "traceroute_gci_*.txt" -mtime -1 2>/dev/null); do
+        local star_count=$(grep -c "\*" "$log_file" 2>/dev/null | tr -cd '0-9')
+        star_count=${star_count:-0}
+        local score=$((star_count * 100))
+        if [ $score -ge $max_gci_score ]; then
+            max_gci_score=$score
+            worst_gci="$log_file"
+        fi
+    done
+    if [ -n "$worst_gci" ] && [ -s "$worst_gci" ]; then
+        cp "$worst_gci" "${REPO_DIR}/traceroute_gci_worst.txt"
+    else
+        cp "${REPO_DIR}/traceroute_gci.txt" "${REPO_DIR}/traceroute_gci_worst.txt" 2>/dev/null
+    fi
+
     # 4. GIT COMMIT AND PUSH
     echo "[Git] Checking for modified telemetry tracking assets..."
 
     # Only add files if they exist to avoid git fatal pathspec error on first run
     local files_to_add=""
-    for file in "${REPO_DIR}/${VPN_OUTPUT_3H}" "${REPO_DIR}/${VPN_OUTPUT_10D}" "${REPO_DIR}/roblox_gci_native_3h.png" "${REPO_DIR}/roblox_gci_native_10d.png" "${REPO_DIR}/metadata.json" "${REPO_DIR}/traceroute_vpn.txt" "${REPO_DIR}/traceroute_gci.txt"; do
+    for file in "${REPO_DIR}/${VPN_OUTPUT_3H}" "${REPO_DIR}/${VPN_OUTPUT_10D}" "${REPO_DIR}/roblox_gci_native_3h.png" "${REPO_DIR}/roblox_gci_native_10d.png" "${REPO_DIR}/metadata.json" "${REPO_DIR}/traceroute_vpn.txt" "${REPO_DIR}/traceroute_gci.txt" "${REPO_DIR}/traceroute_vpn_worst.txt" "${REPO_DIR}/traceroute_gci_worst.txt"; do
         if [ -f "$file" ]; then
             files_to_add="$files_to_add $file"
         fi
@@ -291,7 +328,9 @@ EOF
     git add $files_to_add
 
     # Check if anything is staged to commit
-    if git diff --cached --quiet; then
+    if [ "${SKIP_PUSH}" = "true" ]; then
+        echo "[Git] SKIP_PUSH is true. Skipping git commit and push."
+    elif git diff --cached --quiet; then
         echo "[Git] Telemetry charts and metadata are already up-to-date. Skipping commit."
     else
         echo "[Git] Staged changes detected. Committing telemetry assets..."
@@ -314,7 +353,10 @@ EOF
 
 # --- PROCESS EXECUTION CONTROL ---
 
-if [ "$1" = "--once" ]; then
+if [ "$1" = "--once" ] || [ "$1" = "--no-push" ]; then
+    if [ "$1" = "--no-push" ] || [ "$2" = "--no-push" ]; then
+        SKIP_PUSH="true"
+    fi
     sync_telemetry
     exit 0
 else

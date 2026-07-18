@@ -943,17 +943,23 @@
 
             <!-- Live Traceroute Output Console -->
             <div class="traceroute-console-section" style="margin-top: 2rem;">
-                <h3 style="font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-                    Live Traceroute Logs (Active Peering Traces)
-                </h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <h3 style="font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                        Traceroute Diagnostic Reports
+                    </h3>
+                    <div style="display: flex; gap: 0.5rem; background: var(--bg-tertiary); padding: 0.25rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <button id="btn-trace-latest" onclick="switchTraceView('latest')" style="padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); transition: all 0.2s;">🟢 Latest 5-Min Probe</button>
+                        <button id="btn-trace-worst" onclick="switchTraceView('worst')" style="padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--text-secondary); transition: all 0.2s;">🔴 24h Peak Congestion (Worst Probe)</button>
+                    </div>
+                </div>
                 <div class="routing-grid">
                     <div>
-                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--accent-vpn); margin-bottom: 0.5rem;">Latest VPN Trace (Seattle Gateway)</div>
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--accent-vpn); margin-bottom: 0.5rem;" id="vpn-trace-title">Latest VPN MTR Report (Seattle Gateway)</div>
                         <pre class="trace-pre" id="vpn-trace-log">Loading live VPN traceroute logs...</pre>
                     </div>
                     <div>
-                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--accent-gci); margin-bottom: 0.5rem;">Latest Raw GCI Trace (Anchorage Gateways)</div>
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--accent-gci); margin-bottom: 0.5rem;" id="gci-trace-title">Latest Raw GCI MTR Report (Anchorage Gateways)</div>
                         <pre class="trace-pre" id="gci-trace-log">Loading GCI traceroute logs...</pre>
                     </div>
                 </div>
@@ -1103,10 +1109,42 @@
             }
         });
 
+        let currentTraceMode = 'latest';
+
+        function switchTraceView(mode) {
+            currentTraceMode = mode;
+            const btnLatest = document.getElementById('btn-trace-latest');
+            const btnWorst = document.getElementById('btn-trace-worst');
+            
+            if (mode === 'latest') {
+                btnLatest.style.background = 'var(--bg-card)';
+                btnLatest.style.color = 'var(--text-primary)';
+                btnLatest.style.borderColor = 'var(--border-color)';
+                btnWorst.style.background = 'transparent';
+                btnWorst.style.color = 'var(--text-secondary)';
+                btnWorst.style.borderColor = 'transparent';
+                document.getElementById('vpn-trace-title').textContent = 'Latest VPN MTR Report (Seattle Gateway)';
+                document.getElementById('gci-trace-title').textContent = 'Latest Raw GCI MTR Report (Anchorage Gateways)';
+            } else {
+                btnWorst.style.background = 'var(--bg-card)';
+                btnWorst.style.color = 'var(--accent-gci)';
+                btnWorst.style.borderColor = 'var(--accent-gci)';
+                btnLatest.style.background = 'transparent';
+                btnLatest.style.color = 'var(--text-secondary)';
+                btnLatest.style.borderColor = 'transparent';
+                document.getElementById('vpn-trace-title').textContent = '24h Worst VPN MTR Report (Peak Congestion Event)';
+                document.getElementById('gci-trace-title').textContent = '24h Worst GCI MTR Report (Peak Congestion Event)';
+            }
+            fetchTracerouteLogs();
+        }
+
         async function fetchTracerouteLogs() {
+            const vpnFile = currentTraceMode === 'worst' ? './traceroute_vpn_worst.txt' : './traceroute_vpn.txt';
+            const gciFile = currentTraceMode === 'worst' ? './traceroute_gci_worst.txt' : './traceroute_gci.txt';
+
             // Fetch VPN traceroute log
             try {
-                const response = await fetch('./traceroute_vpn.txt?t=' + new Date().getTime());
+                const response = await fetch(vpnFile + '?t=' + new Date().getTime());
                 if (response.ok) {
                     const text = await response.text();
                     document.getElementById('vpn-trace-log').textContent = text;
@@ -1120,7 +1158,7 @@
 
             // Fetch GCI traceroute log
             try {
-                const response = await fetch('./traceroute_gci.txt?t=' + new Date().getTime());
+                const response = await fetch(gciFile + '?t=' + new Date().getTime());
                 if (response.ok) {
                     const text = await response.text();
                     document.getElementById('gci-trace-log').textContent = text;

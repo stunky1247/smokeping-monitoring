@@ -22,14 +22,36 @@ if [ -z "${WIN_TRACERT}" ]; then
     exit 1
 fi
 
-echo "Starting GCI Traceroute Loop..."
-echo "Output path: ${TARGET_FILE}"
+HISTORY_FILE="${REPO_DIR}/smokeping/data/Roblox_TCP/traceroute_gci_history.log"
 
-# Run in an infinite loop every hour
+echo "Starting GCI 5-Minute Traceroute Loop..."
+echo "Output path: ${TARGET_FILE}"
+echo "History path: ${HISTORY_FILE}"
+
+# Run in an infinite loop every 5 minutes (300 seconds)
 while true; do
-    echo "[$(date)] Executing traceroute trace..."
+    echo "[$(date)] Executing 5-minute MTR probe..."
     mkdir -p "$(dirname "${TARGET_FILE}")"
-    "${WIN_TRACERT}" -d -h 15 edge-term4-sea1.roblox.com > "${TARGET_FILE}" 2>&1
-    echo "[$(date)] Traceroute completed. Sleeping for 1 hour."
-    sleep 3600
+    
+    # Run MTR (or tracert fallback) to temporary file
+    TEMP_TRACE="${TARGET_FILE}.tmp"
+    if command -v mtr &>/dev/null; then
+        mtr --report --report-cycles 10 --no-dns edge-term4-sea1.roblox.com > "${TEMP_TRACE}" 2>&1
+    elif [ -n "${WIN_TRACERT}" ]; then
+        "${WIN_TRACERT}" -d -h 15 edge-term4-sea1.roblox.com > "${TEMP_TRACE}" 2>&1
+    fi
+
+    if [ -s "${TEMP_TRACE}" ]; then
+        mv "${TEMP_TRACE}" "${TARGET_FILE}"
+        # Append timestamped entry to host history file
+        echo "=== MTR Probe: $(date -u +'%Y-%m-%dT%H:%M:%SZ') ===" >> "${HISTORY_FILE}"
+        cat "${TARGET_FILE}" >> "${HISTORY_FILE}"
+        echo "" >> "${HISTORY_FILE}"
+        
+        # Keep history file trimmed to last ~5000 lines (~24 hours of data)
+        tail -n 5000 "${HISTORY_FILE}" > "${HISTORY_FILE}.tmp" && mv "${HISTORY_FILE}.tmp" "${HISTORY_FILE}"
+    fi
+
+    echo "[$(date)] Probe completed. Sleeping for 5 minutes (300s)..."
+    sleep 300
 done
