@@ -1,0 +1,19 @@
+
+Tracing route to edge-term4-sea1.roblox.com [128.116.115.3]
+over a maximum of 15 hops:
+
+  1     8 ms     5 ms     5 ms  192.168.68.1 
+  2     *        *        *     Request timed out.
+  3    17 ms    17 ms    15 ms  10.128.41.41 
+  4    14 ms    19 ms    18 ms  10.128.17.246 
+  5     *        *        *     Request timed out.
+  6    47 ms    49 ms    52 ms  10.128.4.190 
+  7     *       45 ms    56 ms  10.128.4.17 
+  8    51 ms    52 ms    52 ms  50.248.117.237 
+  9    46 ms    51 ms    51 ms  96.110.34.134 
+ 10     *        *        *     Request timed out.
+ 11     *        *        *     Request timed out.
+ 12     *        *        *     Request timed out.
+ 13    48 ms    49 ms    49 ms  128.116.115.3 
+
+Trace complete.
