@@ -1,5 +1,5 @@
 Start: 2026-07-18T20:46:19-0800
-HOST: ChickenLaptop               Loss%   Snt   Last   Avg  Best  Wrst StDev
+HOST: GCI-Native-Node                 Loss%   Snt   Last   Avg  Best  Wrst StDev
   1.|-- 172.20.64.1                0.0%    10    0.4   0.5   0.4   0.6   0.1
   2.|-- 192.168.68.1               0.0%    10   14.5   8.1   5.9  14.5   2.7
   3.|-- ???                       100.0    10    0.0   0.0   0.0   0.0   0.0
