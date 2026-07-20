@@ -31,7 +31,7 @@ VPN_SMOKEPING_URL="http://${VPN_SMOKEPING_HOST}/smokeping"
 # Remote SmokePing (Machine B - Raw GCI Native)
 # Choose pull method: "ssh" (SCP over network) or "http" (Fetch via local webserver)
 REMOTE_PULL_METHOD="http"
-REMOTE_IP="192.168.68.72"
+REMOTE_IP="192.168.68.68"
 
 # Remote SSH Settings (For pull method: "ssh")
 REMOTE_SSH_HOST="${REMOTE_IP}"
@@ -264,6 +264,14 @@ EOF
             echo "Traceroute tool not available on this host." > "${vpn_trace_file}"
         fi
     fi
+
+    # Generic PII Sanitization: Rewrite MTR HOST headers to generic node labels
+    if [ -f "${vpn_trace_file}" ]; then
+        sed -i 's/^HOST: .*/HOST: VPN-Seattle-Node                 Loss%   Snt   Last   Avg  Best  Wrst StDev/' "${vpn_trace_file}" 2>/dev/null
+    fi
+    if [ -f "${REPO_DIR}/traceroute_gci.txt" ]; then
+        sed -i 's/^HOST: .*/HOST: GCI-Native-Node                 Loss%   Snt   Last   Avg  Best  Wrst StDev/' "${REPO_DIR}/traceroute_gci.txt" 2>/dev/null
+    fi
     
     # Save historical copies if files exist and are not empty
     local timestamp=$(date +%Y%m%d_%H%M)
@@ -274,16 +282,18 @@ EOF
         cp "${REPO_DIR}/traceroute_gci.txt" "${trace_dir}/traceroute_gci_${timestamp}.txt"
     fi
 
-    # Extract 24-hour worst trace from traceroute_logs
+    # Extract 24-hour worst trace from traceroute_logs (preferring MTR format)
     local worst_vpn=""
-    local max_score=0
+    local max_score=-1
     for log_file in $(find "${trace_dir}" -name "traceroute_vpn_*.txt" -mtime -1 2>/dev/null); do
-        local star_count=$(grep -c "\*" "$log_file" 2>/dev/null | tr -cd '0-9')
-        star_count=${star_count:-0}
-        local score=$((star_count * 100))
-        if [ $score -ge $max_score ]; then
-            max_score=$score
-            worst_vpn="$log_file"
+        if grep -q "HOST:" "$log_file" 2>/dev/null; then
+            local star_count=$(grep -c "\*" "$log_file" 2>/dev/null | tr -cd '0-9')
+            star_count=${star_count:-0}
+            local score=$((star_count * 100))
+            if [ $score -gt $max_score ]; then
+                max_score=$score
+                worst_vpn="$log_file"
+            fi
         fi
     done
     if [ -n "$worst_vpn" ] && [ -s "$worst_vpn" ]; then
@@ -293,20 +303,30 @@ EOF
     fi
 
     local worst_gci=""
-    local max_gci_score=0
+    local max_gci_score=-1
     for log_file in $(find "${trace_dir}" -name "traceroute_gci_*.txt" -mtime -1 2>/dev/null); do
-        local star_count=$(grep -c "\*" "$log_file" 2>/dev/null | tr -cd '0-9')
-        star_count=${star_count:-0}
-        local score=$((star_count * 100))
-        if [ $score -ge $max_gci_score ]; then
-            max_gci_score=$score
-            worst_gci="$log_file"
+        if grep -q "HOST:" "$log_file" 2>/dev/null; then
+            local star_count=$(grep -c "\*" "$log_file" 2>/dev/null | tr -cd '0-9')
+            star_count=${star_count:-0}
+            local score=$((star_count * 100))
+            if [ $score -gt $max_gci_score ]; then
+                max_gci_score=$score
+                worst_gci="$log_file"
+            fi
         fi
     done
     if [ -n "$worst_gci" ] && [ -s "$worst_gci" ]; then
         cp "$worst_gci" "${REPO_DIR}/traceroute_gci_worst.txt"
     else
         cp "${REPO_DIR}/traceroute_gci.txt" "${REPO_DIR}/traceroute_gci_worst.txt" 2>/dev/null
+    fi
+
+    # Ensure worst-case files are also sanitized
+    if [ -f "${REPO_DIR}/traceroute_vpn_worst.txt" ]; then
+        sed -i 's/^HOST: .*/HOST: VPN-Seattle-Node                 Loss%   Snt   Last   Avg  Best  Wrst StDev/' "${REPO_DIR}/traceroute_vpn_worst.txt" 2>/dev/null
+    fi
+    if [ -f "${REPO_DIR}/traceroute_gci_worst.txt" ]; then
+        sed -i 's/^HOST: .*/HOST: GCI-Native-Node                 Loss%   Snt   Last   Avg  Best  Wrst StDev/' "${REPO_DIR}/traceroute_gci_worst.txt" 2>/dev/null
     fi
 
     # 4. GIT COMMIT AND PUSH

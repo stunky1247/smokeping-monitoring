@@ -42,6 +42,8 @@ while true; do
     fi
 
     if [ -s "${TEMP_TRACE}" ]; then
+        # Generic PII Sanitization: Rewrite MTR HOST headers to generic node label
+        sed -i 's/^HOST: .*/HOST: GCI-Native-Node                 Loss%   Snt   Last   Avg  Best  Wrst StDev/' "${TEMP_TRACE}" 2>/dev/null
         mv "${TEMP_TRACE}" "${TARGET_FILE}"
         # Append timestamped entry to host history file
         echo "=== MTR Probe: $(date -u +'%Y-%m-%dT%H:%M:%SZ') ===" >> "${HISTORY_FILE}"
