@@ -13,4 +13,4 @@ services:
       - ./smokeping/data:/data
     ports:
       - 80:80
-    restart: "no"
+    restart: always
