@@ -25,6 +25,7 @@ remark = Measures the network response time to Roblox's primary front-end websit
 menu = Roblox API
 title = Roblox API Engine (Microservices)
 host = edge-term4-sea1.roblox.com
+pings = 5
 remark = Monitors backend authentication and configuration microservices to determine if the core database engine is up and allowing players to log in.
 
 ++ CDN_Static_Assets
@@ -266,6 +267,7 @@ remark = Tracks connection reliability and TCP packet loss to the main front-end
 menu = Roblox API (TCP)
 title = Roblox API Engine - TCP 443
 host = edge-term4-sea1.roblox.com
+pings = 5
 remark = Tracks connection reliability and TCP packet loss to core authentication and configuration microservices.
 
 ++ CDN_Static_Assets_TCP
