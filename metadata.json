@@ -1,14 +1,14 @@
 {
-  "last_updated_utc": "2026-07-23T22:25:19Z",
-  "last_updated_local": "2026-07-23T14:25:19-0800",
+  "last_updated_utc": "2026-07-23T22:47:35Z",
+  "last_updated_local": "2026-07-23T14:47:35-0800",
   "local_sync_ok": true,
   "remote_sync_ok": true,
-  "vpn_loss_pct": "84.6",
-  "vpn_latency": "47.7ms",
-  "vpn_success_pct": "15.4",
-  "vpn_jitter": "9.7ms",
-  "gci_loss_pct": "23.6",
-  "gci_latency": "44.5ms",
-  "gci_success_pct": "76.4",
+  "vpn_loss_pct": "60.4",
+  "vpn_latency": "46.3ms",
+  "vpn_success_pct": "39.6",
+  "vpn_jitter": "7.0ms",
+  "gci_loss_pct": "22.6",
+  "gci_latency": "44.6ms",
+  "gci_success_pct": "77.4",
   "gci_jitter": "1.3ms"
 }
